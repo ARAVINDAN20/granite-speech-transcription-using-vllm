@@ -1,0 +1,74 @@
+services:
+  # vLLM Server - Granite Speech Model
+  vllm:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vllm-server
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - PYTORCH_ALLOC_CONF=expandable_segments:True
+      - LD_LIBRARY_PATH=/usr/local/nvidia/lib64:/usr/local/nvidia/lib:/usr/lib/x86_64-linux-gnu
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    ipc: host
+    command:
+      - ibm-granite/granite-4.0-1b-speech
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --max-model-len
+      - "512"
+      - --gpu-memory-utilization
+      - "0.6"
+      - --enforce-eager
+      - --skip-mm-profiling
+      - --limit-mm-per-prompt
+      - '{"audio": 1}'
+      - --trust-remote-code
+      - --dtype
+      - float16
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - app-network
+
+  # Python Proxy - Converts WebM to WAV
+  proxy:
+    build:
+      context: ./proxy
+      dockerfile: Dockerfile
+    container_name: audio-proxy
+    environment:
+      - VLLM_URL=http://vllm:8000
+    networks:
+      - app-network
+    depends_on:
+      - vllm
+    restart: unless-stopped
+
+  # Nginx - Serves frontend AND proxies to Python proxy
+  nginx:
+    image: nginx:alpine
+    container_name: transcription-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - proxy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
