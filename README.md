@@ -36,8 +36,8 @@
 
 ```bash
 # Clone repository
-git clone <your-repo-url>
-cd ARS
+git clone https://github.com/ARAVINDAN20/granite-speech-transcription-using-vllm.git
+cd granite-speech-transcription-using-vllm
 
 # Configure Hugging Face token
 echo "HF_TOKEN=your_hf_token_here" > .env
@@ -258,13 +258,6 @@ This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENS
 - **Hugging Face** - For the model hosting and transformers library
 - **ffmpeg** - For audio format conversion
 
----
-
-## 📞 Support
-
-- **Documentation:** See `docs/` folder
-- **Issues:** Open a GitHub issue
-- **Discussions:** GitHub Discussions tab
 
 ---
 
